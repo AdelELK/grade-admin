@@ -1,0 +1,42 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
+tfplan
+tfplan.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Fichiers locaux
+terraform.tfvars
+terraform.tfvars.json
+!terraform.tfvars.example
+
+# Variables d'environnement
+.env
+.env.local
+
+# Build artifacts
+*.zip
+lambda_build/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Outputs
+*.out

@@ -1,0 +1,26 @@
+# Configuration Terraform - Exemple
+# Copier en terraform.tfvars et adapter à votre environnement
+
+aws_region = "eu-west-1"
+environment = "dev"
+app_name = "document-uploader"
+
+# Optionnel: spécifier un nom de bucket S3 personnalisé
+# s3_bucket_name = "my-custom-bucket-name"
+
+lambda_timeout = 30
+lambda_memory = 512
+
+# CORS - Ajouter votre domaine en production
+cors_origins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  # "https://yourfrontenddomain.com"
+]
+
+# Tags additionnels
+tags = {
+  CostCenter = "Engineering"
+  Team       = "Backend"
+  Owner      = "DevOps"
+}
