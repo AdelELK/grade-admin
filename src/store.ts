@@ -9,81 +9,107 @@ export interface Document {
   preview?: string;
 }
 
-export interface Collection {
+export interface Evaluation {
   id: string;
   name: string;
   description?: string;
+  cover?: Document;
   documents: Document[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 interface AppState {
-  collections: Collection[];
-  currentCollection: Collection | null;
+  evaluations: Evaluation[];
+  currentEvaluation: Evaluation | null;
   
-  // Collection methods
-  createCollection: (name: string, description?: string) => void;
-  deleteCollection: (id: string) => void;
-  updateCollection: (id: string, name: string, description?: string) => void;
-  selectCollection: (id: string) => void;
+  // Evaluation methods
+  createEvaluation: (name: string, description?: string, coverFile?: File | null) => void;
+  deleteEvaluation: (id: string) => void;
+  updateEvaluation: (id: string, name: string, description?: string) => void;
+  selectEvaluation: (id: string) => void;
   
   // Document methods
   addDocuments: (files: File[]) => void;
-  removeDocument: (collectionId: string, documentId: string) => void;
+  removeDocument: (evaluationId: string, documentId: string) => void;
   
   // Utility
-  getCollectionById: (id: string) => Collection | undefined;
+  getEvaluationById: (id: string) => Evaluation | undefined;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  collections: [],
-  currentCollection: null,
+  evaluations: [],
+  currentEvaluation: null,
 
-  createCollection: (name: string, description?: string) => {
-    const newCollection: Collection = {
+  createEvaluation: (name: string, description?: string, coverFile?: File | null) => {
+    let coverDoc: Document | undefined;
+    if (coverFile) {
+      let type: 'pdf' | 'image' = 'image';
+      if (coverFile.type === 'application/pdf') type = 'pdf';
+
+      let preview: string | undefined;
+      if (type === 'image') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          preview = e.target?.result as string;
+        };
+        reader.readAsDataURL(coverFile);
+      }
+
+      coverDoc = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: coverFile.name,
+        file: coverFile,
+        type,
+        uploadedAt: new Date(),
+        preview,
+      };
+    }
+
+    const newEvaluation: Evaluation = {
       id: Math.random().toString(36).substr(2, 9),
       name,
       description,
+      cover: coverDoc,
       documents: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     set((state) => ({
-      collections: [...state.collections, newCollection],
+      evaluations: [...state.evaluations, newEvaluation],
     }));
   },
 
-  deleteCollection: (id: string) => {
+  deleteEvaluation: (id: string) => {
     set((state) => ({
-      collections: state.collections.filter((c) => c.id !== id),
-      currentCollection: state.currentCollection?.id === id ? null : state.currentCollection,
+      evaluations: state.evaluations.filter((c) => c.id !== id),
+      currentEvaluation: state.currentEvaluation?.id === id ? null : state.currentEvaluation,
     }));
   },
 
-  updateCollection: (id: string, name: string, description?: string) => {
+  updateEvaluation: (id: string, name: string, description?: string) => {
     set((state) => ({
-      collections: state.collections.map((c) =>
+      evaluations: state.evaluations.map((c) =>
         c.id === id
           ? { ...c, name, description, updatedAt: new Date() }
           : c
       ),
-      currentCollection:
-        state.currentCollection?.id === id
-          ? { ...state.currentCollection, name, description, updatedAt: new Date() }
-          : state.currentCollection,
+      currentEvaluation:
+        state.currentEvaluation?.id === id
+          ? { ...state.currentEvaluation, name, description, updatedAt: new Date() }
+          : state.currentEvaluation,
     }));
   },
 
-  selectCollection: (id: string) => {
-    const collection = get().getCollectionById(id);
-    set({ currentCollection: collection || null });
+  selectEvaluation: (id: string) => {
+    const evaluation = get().getEvaluationById(id);
+    set({ currentEvaluation: evaluation || null });
   },
 
   addDocuments: (files: File[]) => {
-    const { currentCollection } = get();
-    if (!currentCollection) return;
+    const { currentEvaluation } = get();
+    if (!currentEvaluation) return;
 
     const newDocuments: Document[] = files.map((file) => {
       let type: 'pdf' | 'image' = 'image';
@@ -111,23 +137,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     set((state) => ({
-      collections: state.collections.map((c) =>
-        c.id === currentCollection.id
+      evaluations: state.evaluations.map((c) =>
+        c.id === currentEvaluation.id
           ? { ...c, documents: [...c.documents, ...newDocuments], updatedAt: new Date() }
           : c
       ),
-      currentCollection: {
-        ...currentCollection,
-        documents: [...currentCollection.documents, ...newDocuments],
+      currentEvaluation: {
+        ...currentEvaluation,
+        documents: [...currentEvaluation.documents, ...newDocuments],
         updatedAt: new Date(),
       },
     }));
   },
 
-  removeDocument: (collectionId: string, documentId: string) => {
+  removeDocument: (evaluationId: string, documentId: string) => {
     set((state) => ({
-      collections: state.collections.map((c) =>
-        c.id === collectionId
+      evaluations: state.evaluations.map((c) =>
+        c.id === evaluationId
           ? {
               ...c,
               documents: c.documents.filter((d) => d.id !== documentId),
@@ -135,18 +161,18 @@ export const useAppStore = create<AppState>((set, get) => ({
             }
           : c
       ),
-      currentCollection:
-        state.currentCollection?.id === collectionId
+      currentEvaluation:
+        state.currentEvaluation?.id === evaluationId
           ? {
-              ...state.currentCollection,
-              documents: state.currentCollection.documents.filter((d) => d.id !== documentId),
+              ...state.currentEvaluation,
+              documents: state.currentEvaluation.documents.filter((d) => d.id !== documentId),
               updatedAt: new Date(),
             }
-          : state.currentCollection,
+          : state.currentEvaluation,
     }));
   },
 
-  getCollectionById: (id: string) => {
-    return get().collections.find((c) => c.id === id);
+  getEvaluationById: (id: string) => {
+    return get().evaluations.find((c) => c.id === id);
   },
 }));

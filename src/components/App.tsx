@@ -1,12 +1,9 @@
 import React from 'react';
-import { useAppStore } from '../store';
-import { CollectionList } from './CollectionList';
-import { FileUploader } from './FileUploader';
-import { DocumentList } from './DocumentList';
+// Note: CollectionList/FileUploader/DocumentList imports removed because page now shows single form
+import MultiStepCollectionForm from './MultiStepCollectionForm';
 
 export const App: React.FC = () => {
-  const collections = useAppStore((state) => state.collections);
-  const currentCollection = useAppStore((state) => state.currentCollection);
+  // collections and currentCollection not needed on this view
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -22,44 +19,11 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left Sidebar - Collections */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <CollectionList
-                collections={collections}
-                currentCollection={currentCollection}
-              />
-            </div>
-          </div>
-
-          {/* Right Content - Upload and Documents */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* File Upload Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              {currentCollection && (
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {currentCollection.name}
-                  </h2>
-                  {currentCollection.description && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {currentCollection.description}
-                    </p>
-                  )}
-                </div>
-              )}
-              <FileUploader />
-            </div>
-
-            {/* Documents Section */}
-            {currentCollection && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <DocumentList documents={currentCollection.documents} />
-              </div>
-            )}
+      {/* Main Content: centered single form */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="min-h-[60vh] flex items-start justify-center">
+          <div className="w-full">
+            <MultiStepCollectionForm />
           </div>
         </div>
       </main>

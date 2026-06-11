@@ -47,13 +47,13 @@ const DocumentItem: React.FC<{ doc: Document; onDelete: () => void }> = ({ doc, 
 
 export const DocumentList: React.FC<DocumentListProps> = ({ documents }) => {
   const removeDocument = useAppStore((state) => state.removeDocument);
-  const currentCollection = useAppStore((state) => state.currentCollection);
+  const currentEvaluation = useAppStore((state) => state.currentEvaluation);
 
   if (documents.length === 0) {
     return (
       <div className="py-12 text-center">
         <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500">Aucun document dans cette collection</p>
+        <p className="text-gray-500">Aucun document dans cette évaluation</p>
       </div>
     );
   }
@@ -67,9 +67,9 @@ export const DocumentList: React.FC<DocumentListProps> = ({ documents }) => {
         <DocumentItem
           key={doc.id}
           doc={doc}
-          onDelete={() => {
-            if (currentCollection) {
-              removeDocument(currentCollection.id, doc.id);
+            onDelete={() => {
+            if (currentEvaluation) {
+              removeDocument(currentEvaluation.id, doc.id);
             }
           }}
         />

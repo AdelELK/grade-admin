@@ -5,7 +5,7 @@ import { useAppStore } from '../store';
 export const FileUploader: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addDocuments = useAppStore((state) => state.addDocuments);
-  const currentCollection = useAppStore((state) => state.currentCollection);
+  const currentEvaluation = useAppStore((state) => state.currentEvaluation);
 
   const handleClick = () => {
     fileInputRef.current?.click();
@@ -41,10 +41,10 @@ export const FileUploader: React.FC = () => {
     e.stopPropagation();
   };
 
-  if (!currentCollection) {
+  if (!currentEvaluation) {
     return (
       <div className="p-8 text-center text-gray-500">
-        <p>Sélectionnez ou créez une collection pour commencer</p>
+        <p>Sélectionnez ou créez une évaluation pour commencer</p>
       </div>
     );
   }
