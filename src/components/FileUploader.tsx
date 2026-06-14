@@ -4,17 +4,17 @@ import { useAppStore } from '../store';
 
 export const FileUploader: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const addDocuments = useAppStore((state) => state.addDocuments);
-  const currentEvaluation = useAppStore((state) => state.currentEvaluation);
+  const setDocument = useAppStore((state) => state.setDocument);
+  const currentAssessment = useAppStore((state) => state.currentAssessment);
 
   const handleClick = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      addDocuments(files);
+    const file = e.target.files?.[0];
+    if (file) {
+      setDocument(file);
     }
     // Reset input
     if (fileInputRef.current) {
@@ -26,13 +26,12 @@ export const FileUploader: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    const files = Array.from(e.dataTransfer.files);
-    const validFiles = files.filter(
+    const file = Array.from(e.dataTransfer.files).find(
       (file) => file.type === 'application/pdf' || file.type.startsWith('image/')
     );
     
-    if (validFiles.length > 0) {
-      addDocuments(validFiles);
+    if (file) {
+      setDocument(file);
     }
   };
 
@@ -41,10 +40,10 @@ export const FileUploader: React.FC = () => {
     e.stopPropagation();
   };
 
-  if (!currentEvaluation) {
+  if (!currentAssessment) {
     return (
       <div className="p-8 text-center text-gray-500">
-        <p>Sélectionnez ou créez une évaluation pour commencer</p>
+        <p>Sélectionnez ou créez un assessment pour commencer</p>
       </div>
     );
   }
@@ -59,7 +58,6 @@ export const FileUploader: React.FC = () => {
       <input
         ref={fileInputRef}
         type="file"
-        multiple
         accept=".pdf,image/*"
         onChange={handleFileChange}
         className="hidden"
@@ -69,7 +67,7 @@ export const FileUploader: React.FC = () => {
         <Upload className="w-8 h-8 text-gray-400" />
         <div>
           <p className="text-base font-medium text-gray-700">
-            Déposez vos fichiers ici
+            Déposez votre fichier ici
           </p>
           <p className="text-sm text-gray-500 mt-1">
             ou cliquez pour parcourir

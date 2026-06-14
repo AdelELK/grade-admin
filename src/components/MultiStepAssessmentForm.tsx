@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
+import {
+  createAssessment as createAssessmentOnApi,
+  uploadAssessmentFile,
+} from '../api';
 
 interface Props {
   onClose?: () => void;
@@ -7,8 +11,8 @@ interface Props {
 
 const steps = ['Renseignements', 'Système de notation', 'Finaliser'];
 
-export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
-  const createEvaluation = useAppStore((s) => s.createEvaluation);
+export const MultiStepAssessmentForm: React.FC<Props> = ({ onClose }) => {
+  const addAssessment = useAppStore((s) => s.addAssessment);
 
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
@@ -16,6 +20,7 @@ export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!file) {
@@ -43,19 +48,56 @@ export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
     setFile(f);
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!title.trim()) {
       setError('Le titre est requis');
       return;
     }
 
-    createEvaluation(title.trim(), description.trim() || undefined, file || null);
-    setTitle('');
-    setDescription('');
-    setFile(null);
-    setPreview(null);
+    if (!file) {
+      setError('Le modèle est requis pour créer l\'assessment.');
+      return;
+    }
+
+    setIsSubmitting(true);
     setError(null);
-    if (onClose) onClose();
+
+    try {
+      const assessmentName = title.trim();
+      const assessmentDescription = description.trim() || undefined;
+
+      const assessment = await createAssessmentOnApi(
+        assessmentName,
+        assessmentDescription,
+      );
+      const s3Key = await uploadAssessmentFile(file);
+
+      addAssessment({
+        ...assessment,
+        document: {
+          id: s3Key,
+          name: file.name,
+          file,
+          s3Key,
+          type: file.type === 'application/pdf' ? 'pdf' : 'image',
+          uploadedAt: new Date(),
+          preview: preview ?? undefined,
+        },
+      });
+      setTitle('');
+      setDescription('');
+      setFile(null);
+      setPreview(null);
+      if (onClose) onClose();
+    } catch (submissionError) {
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : "Une erreur est survenue pendant la création de l'assessment.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -90,7 +132,7 @@ export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
 
         {/* Card */}
         <div className="bg-white p-6 rounded-b-md border border-gray-200 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-3">Créer une nouvelle évaluation</h3>
+          <h3 className="font-semibold text-gray-900 mb-3">Créer une nouvelle assessment</h3>
 
           {step === 1 && (
             <div className="space-y-4">
@@ -100,7 +142,7 @@ export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Titre de la collection"
+                  placeholder="Titre de l'assessment"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -146,7 +188,7 @@ export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
                     setStep(2);
                   }}
                   className="px-4 py-2 bg-gray-100 rounded-md text-sm text-gray-700 hover:bg-gray-200"
-                  disabled={!title.trim()}
+                  disabled={!title.trim() || isSubmitting}
                 >
                   Suivant
                 </button>
@@ -154,21 +196,17 @@ export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
                 <div className="flex-1" />
 
                 <button
-                  onClick={() => {
-                    if (!file) {
-                      setError('Le modèle est requis pour créer l\'évaluation.');
-                      return;
-                    }
-                    handleCreate();
-                  }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                  onClick={handleCreate}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60 text-sm"
                 >
-                  Créer (étape 1)
+                  {isSubmitting ? 'Envoi en cours...' : 'Créer (étape 1)'}
                 </button>
 
                 <button
                   onClick={() => { if (onClose) onClose(); }}
-                  className="px-3 py-2 border border-gray-300 text-sm rounded-md"
+                  disabled={isSubmitting}
+                  className="px-3 py-2 border border-gray-300 disabled:cursor-not-allowed disabled:opacity-60 text-sm rounded-md"
                 >
                   Annuler
                 </button>
@@ -181,7 +219,13 @@ export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
               <p className="text-sm text-gray-600">Système de notation — à implémenter</p>
               <div className="flex gap-2 mt-3">
                 <button onClick={() => setStep(1)} className="px-3 py-2 border rounded">Retour</button>
-                <button onClick={handleCreate} className="px-4 py-2 bg-blue-500 text-white rounded">Créer</button>
+                <button
+                  onClick={handleCreate}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-500 text-white disabled:cursor-not-allowed disabled:opacity-60 rounded"
+                >
+                  {isSubmitting ? 'Envoi en cours...' : 'Créer'}
+                </button>
               </div>
             </div>
           )}
@@ -191,4 +235,4 @@ export const MultiStepCollectionForm: React.FC<Props> = ({ onClose }) => {
   );
 };
 
-export default MultiStepCollectionForm;
+export default MultiStepAssessmentForm;

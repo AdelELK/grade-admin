@@ -4,7 +4,7 @@ import { useAppStore } from '../store';
 import { Document } from '../store';
 
 interface DocumentListProps {
-  documents: Document[];
+  document?: Document;
 }
 
 const DocumentItem: React.FC<{ doc: Document; onDelete: () => void }> = ({ doc, onDelete }) => {
@@ -45,35 +45,30 @@ const DocumentItem: React.FC<{ doc: Document; onDelete: () => void }> = ({ doc, 
   );
 };
 
-export const DocumentList: React.FC<DocumentListProps> = ({ documents }) => {
+export const DocumentList: React.FC<DocumentListProps> = ({ document }) => {
   const removeDocument = useAppStore((state) => state.removeDocument);
-  const currentEvaluation = useAppStore((state) => state.currentEvaluation);
+  const currentAssessment = useAppStore((state) => state.currentAssessment);
 
-  if (documents.length === 0) {
+  if (!document) {
     return (
       <div className="py-12 text-center">
         <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500">Aucun document dans cette évaluation</p>
+        <p className="text-gray-500">Aucun document dans cet assessment</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4">
-        Documents ({documents.length})
-      </h3>
-      {documents.map((doc) => (
-        <DocumentItem
-          key={doc.id}
-          doc={doc}
-            onDelete={() => {
-            if (currentEvaluation) {
-              removeDocument(currentEvaluation.id, doc.id);
-            }
-          }}
-        />
-      ))}
+      <h3 className="text-sm font-semibold text-gray-700 mb-4">Document</h3>
+      <DocumentItem
+        doc={document}
+        onDelete={() => {
+          if (currentAssessment) {
+            removeDocument(currentAssessment.id);
+          }
+        }}
+      />
     </div>
   );
 };

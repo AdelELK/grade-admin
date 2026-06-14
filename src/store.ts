@@ -4,175 +4,127 @@ export interface Document {
   id: string;
   name: string;
   file: File;
+  s3Key?: string;
   type: 'pdf' | 'image';
   uploadedAt: Date;
   preview?: string;
 }
 
-export interface Evaluation {
+export interface Assessment {
   id: string;
-  name: string;
+  title: string;
   description?: string;
-  cover?: Document;
-  documents: Document[];
-  createdAt: Date;
-  updatedAt: Date;
+  document?: Document;
+  metadata?: Record<string, unknown>;
+  status?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface AppState {
-  evaluations: Evaluation[];
-  currentEvaluation: Evaluation | null;
+  assessments: Assessment[];
+  currentAssessment: Assessment | null;
   
-  // Evaluation methods
-  createEvaluation: (name: string, description?: string, coverFile?: File | null) => void;
-  deleteEvaluation: (id: string) => void;
-  updateEvaluation: (id: string, name: string, description?: string) => void;
-  selectEvaluation: (id: string) => void;
+  // Assessment methods
+  addAssessment: (assessment: Assessment) => void;
+  deleteAssessment: (id: string) => void;
+  updateAssessment: (id: string, title: string, description?: string) => void;
+  selectAssessment: (id: string) => void;
   
   // Document methods
-  addDocuments: (files: File[]) => void;
-  removeDocument: (evaluationId: string, documentId: string) => void;
+  setDocument: (file: File) => void;
+  removeDocument: (assessmentId: string) => void;
   
   // Utility
-  getEvaluationById: (id: string) => Evaluation | undefined;
+  getAssessmentById: (id: string) => Assessment | undefined;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  evaluations: [],
-  currentEvaluation: null,
+  assessments: [],
+  currentAssessment: null,
 
-  createEvaluation: (name: string, description?: string, coverFile?: File | null) => {
-    let coverDoc: Document | undefined;
-    if (coverFile) {
-      let type: 'pdf' | 'image' = 'image';
-      if (coverFile.type === 'application/pdf') type = 'pdf';
+  addAssessment: (assessment: Assessment) => {
+    set((state) => ({
+      assessments: [...state.assessments, assessment],
+      currentAssessment: assessment,
+    }));
+  },
 
-      let preview: string | undefined;
-      if (type === 'image') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          preview = e.target?.result as string;
-        };
-        reader.readAsDataURL(coverFile);
-      }
+  deleteAssessment: (id: string) => {
+    set((state) => ({
+      assessments: state.assessments.filter((c) => c.id !== id),
+      currentAssessment: state.currentAssessment?.id === id ? null : state.currentAssessment,
+    }));
+  },
 
-      coverDoc = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: coverFile.name,
-        file: coverFile,
-        type,
-        uploadedAt: new Date(),
-        preview,
-      };
-    }
+  updateAssessment: (id: string, title: string, description?: string) => {
+    set((state) => ({
+      assessments: state.assessments.map((c) =>
+        c.id === id
+          ? { ...c, title, description, updatedAt: new Date() }
+          : c
+      ),
+      currentAssessment:
+        state.currentAssessment?.id === id
+          ? { ...state.currentAssessment, title, description, updatedAt: new Date() }
+          : state.currentAssessment,
+    }));
+  },
 
-    const newEvaluation: Evaluation = {
+  selectAssessment: (id: string) => {
+    const assessment = get().getAssessmentById(id);
+    set({ currentAssessment: assessment || null });
+  },
+
+  setDocument: (file: File) => {
+    const { currentAssessment } = get();
+    if (!currentAssessment) return;
+
+    const document: Document = {
       id: Math.random().toString(36).substr(2, 9),
-      name,
-      description,
-      cover: coverDoc,
-      documents: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      name: file.name,
+      file,
+      type: file.type === 'application/pdf' ? 'pdf' : 'image',
+      uploadedAt: new Date(),
     };
 
     set((state) => ({
-      evaluations: [...state.evaluations, newEvaluation],
-    }));
-  },
-
-  deleteEvaluation: (id: string) => {
-    set((state) => ({
-      evaluations: state.evaluations.filter((c) => c.id !== id),
-      currentEvaluation: state.currentEvaluation?.id === id ? null : state.currentEvaluation,
-    }));
-  },
-
-  updateEvaluation: (id: string, name: string, description?: string) => {
-    set((state) => ({
-      evaluations: state.evaluations.map((c) =>
-        c.id === id
-          ? { ...c, name, description, updatedAt: new Date() }
+      assessments: state.assessments.map((c) =>
+        c.id === currentAssessment.id
+          ? { ...c, document: document, updatedAt: new Date() }
           : c
       ),
-      currentEvaluation:
-        state.currentEvaluation?.id === id
-          ? { ...state.currentEvaluation, name, description, updatedAt: new Date() }
-          : state.currentEvaluation,
-    }));
-  },
-
-  selectEvaluation: (id: string) => {
-    const evaluation = get().getEvaluationById(id);
-    set({ currentEvaluation: evaluation || null });
-  },
-
-  addDocuments: (files: File[]) => {
-    const { currentEvaluation } = get();
-    if (!currentEvaluation) return;
-
-    const newDocuments: Document[] = files.map((file) => {
-      let type: 'pdf' | 'image' = 'image';
-      if (file.type === 'application/pdf') {
-        type = 'pdf';
-      }
-
-      let preview: string | undefined;
-      if (type === 'image') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          preview = e.target?.result as string;
-        };
-        reader.readAsDataURL(file);
-      }
-
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        name: file.name,
-        file,
-        type,
-        uploadedAt: new Date(),
-        preview,
-      };
-    });
-
-    set((state) => ({
-      evaluations: state.evaluations.map((c) =>
-        c.id === currentEvaluation.id
-          ? { ...c, documents: [...c.documents, ...newDocuments], updatedAt: new Date() }
-          : c
-      ),
-      currentEvaluation: {
-        ...currentEvaluation,
-        documents: [...currentEvaluation.documents, ...newDocuments],
+      currentAssessment: {
+        ...currentAssessment,
+        document: document,
         updatedAt: new Date(),
       },
     }));
   },
 
-  removeDocument: (evaluationId: string, documentId: string) => {
+  removeDocument: (assessmentId: string) => {
     set((state) => ({
-      evaluations: state.evaluations.map((c) =>
-        c.id === evaluationId
+      assessments: state.assessments.map((c) =>
+        c.id === assessmentId
           ? {
               ...c,
-              documents: c.documents.filter((d) => d.id !== documentId),
+              document: undefined,
               updatedAt: new Date(),
             }
           : c
       ),
-      currentEvaluation:
-        state.currentEvaluation?.id === evaluationId
+      currentAssessment:
+        state.currentAssessment?.id === assessmentId
           ? {
-              ...state.currentEvaluation,
-              documents: state.currentEvaluation.documents.filter((d) => d.id !== documentId),
+              ...state.currentAssessment,
+              document: undefined,
               updatedAt: new Date(),
             }
-          : state.currentEvaluation,
+          : state.currentAssessment,
     }));
   },
 
-  getEvaluationById: (id: string) => {
-    return get().evaluations.find((c) => c.id === id);
+  getAssessmentById: (id: string) => {
+    return get().assessments.find((c) => c.id === id);
   },
 }));

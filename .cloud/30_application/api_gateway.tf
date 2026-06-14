@@ -2,7 +2,7 @@
 resource "aws_apigatewayv2_api" "api" {
   name          = "${var.app_name}-api"
   protocol_type = "HTTP"
-  
+
   cors_configuration {
     allow_origins = var.cors_origins
     allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
@@ -20,11 +20,11 @@ resource "aws_apigatewayv2_api" "api" {
 
 # API Gateway Integration avec Lambda
 resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id             = aws_apigatewayv2_api.api.id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
+  api_id                 = aws_apigatewayv2_api.api.id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
   payload_format_version = "2.0"
-  
+
   target = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${aws_lambda_function.api_handler.arn}/invocations"
 }
 
@@ -33,13 +33,12 @@ data "aws_region" "current" {}
 # Routes API Gateway
 locals {
   api_routes = {
-    "GET /collections"                    = "GetCollections"
-    "POST /collections"                   = "CreateCollection"
-    "GET /collections/{id}"               = "GetCollection"
-    "PUT /collections/{id}"               = "UpdateCollection"
-    "DELETE /collections/{id}"            = "DeleteCollection"
-    "POST /collections/{id}/documents"    = "UploadDocument"
-    "DELETE /documents/{id}"              = "DeleteDocument"
+    "GET /assessments"         = "GetAssessments"
+    "POST /assessment"         = "CreateAssessment"
+    "GET /assessments/{id}"    = "GetAssessment"
+    "PUT /assessments/{id}"    = "UpdateAssessment"
+    "DELETE /assessments/{id}" = "DeleteAssessment"
+    "GET /presigned-url"       = "GetPresignedUrl"
   }
 }
 
@@ -61,15 +60,15 @@ resource "aws_apigatewayv2_stage" "api_stage" {
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_logs.arn
     format = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      requestTime    = "$context.requestTime"
-      httpMethod     = "$context.httpMethod"
-      resourcePath   = "$context.resourcePath"
-      status         = "$context.status"
-      protocol       = "$context.protocol"
-      responseLength = "$context.responseLength"
-      error          = "$context.error.message"
+      requestId        = "$context.requestId"
+      ip               = "$context.identity.sourceIp"
+      requestTime      = "$context.requestTime"
+      httpMethod       = "$context.httpMethod"
+      resourcePath     = "$context.resourcePath"
+      status           = "$context.status"
+      protocol         = "$context.protocol"
+      responseLength   = "$context.responseLength"
+      error            = "$context.error.message"
       integrationError = "$context.integration.error"
     })
   }
